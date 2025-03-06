@@ -49,7 +49,7 @@ contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
     ) external nonReentrant returns (uint shares) {        
         if (reserve0 > 0 || reserve1 > 0) {
             //passa aqui caso seja primeiro depósito
-            require(reserve0 * _amount1 == reserve1 * _amount0, "Error: x / y != dX / dY"); //x / y == dX / dY
+            require(reserve0 * _amount1 == reserve1 * _amount0, "x / y != dX / dY"); //x / y == dX / dY
         }
         //token pair owner must approve first!
         token0.transferFrom(msg.sender, address(this), _amount0);
@@ -69,6 +69,22 @@ contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
         _mint(msg.sender, shares);
         _update(reserve0 + _amount0, reserve1 + _amount1);
     }
+
+    function removeLiquidity(uint _shares) external nonReentrant returns (uint amount0, uint amount1) {
+        uint balance0 = token0.balanceOf(address(this));
+        uint balance1 = token1.balanceOf(address(this));
+        uint totalSupply = totalSupply();
+        amount0 = (_shares * balance0) / totalSupply;
+        amount1 = (_shares * balance1) / totalSupply;
+
+        require(amount0 > 0 && amount1 > 0, "amount0 or amount1 == 0");
+        //a função _burn() já irá fazer o require dos shares do msg.sender
+        _burn(msg.sender, _shares);
+        _update(balance0 - amount0, balance1 - amount1);
+
+        token0.transfer(msg.sender, amount0);
+        token1.transfer(msg.sender, amount1);
+    }
     
-    
+
 }
